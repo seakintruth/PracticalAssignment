@@ -7,11 +7,8 @@ pacman::p_load(ompr,
 
 CurrentStudents <- 40
 events <- 4
-eventStudentCapacity<-9
-
-
-#capacity <- rep.int(eventStudentCapacity, events) #all have equal capacities
-capacity<-8:11 #all have different capacities
+numberOfEventsStudentsCanPerform<-3
+eventStudentCapacity<-8:11 #must be the same length as: events
 
 # Each student has three options. To model this we have a function that gives us three events 
 # for each student. The first component has perference 1, second 2, and third 3
@@ -22,8 +19,13 @@ set.seed(1234)
 
 #For my problem, I need there to be an initial assignment of students to events.  Next, the students
 #that perform events need to be indexed to the next event.  Finally, the next day needs to run until n days.
-alternateEventOptionsData <- lapply(seq_len(CurrentStudents), function(x) sample(seq_len(events), 3))
+alternateEventOptionsData <- lapply(seq_len(CurrentStudents), function(x) sample(seq_len(events), numberOfEventsStudentsCanPerform))
 
+
+#This currently assumes all students perform an event.  This is not actually going to happen.  
+#Need to add if statement that checks to see if the day is a workday and if that student performed an event.
+#If both cases are true, than the student event needs to be indexed.  This will be the only difference between 
+#alternateEventOptionsData and alternateEventOptionsData2.
 alternateEventOptionsData2 <- lapply(alternateEventOptionsData, function(x) x+1)
 
 
@@ -50,7 +52,7 @@ weight <- function(student, event) {
 # plot the initial random assignments
 plot_data <- expand.grid(
   event = seq_len(events),
-  weight = 1:3
+  weight = 1:numberOfEventsStudentsCanPerform
 ) %>% rowwise() %>% 
   mutate(count = sum(map_int(seq_len(CurrentStudents), ~weight(.x, event) == weight))) %>% 
   mutate(event = factor(event), weight = factor(weight))
@@ -78,7 +80,7 @@ model <- MIPModel() %>%
   # maximize the preferences
   set_objective(sum_expr(weight(i, j) * x[i, j], i = 1:CurrentStudents, j = 1:events)) %>%
   # we cannot exceed the capacity of a event
-  add_constraint(sum_expr(x[i, j], i = 1:CurrentStudents) <= capacity[j], j = 1:events)
+  add_constraint(sum_expr(x[i, j], i = 1:CurrentStudents) <= eventStudentCapacity[j], j = 1:events)
 
 model
 
@@ -100,7 +102,7 @@ matching %>%
 
 # plotting the optimized model
 plot_data <- matching %>% 
-  mutate(event = factor(j), weight = factor(weight, levels = c(1, 2, 3))) %>% 
+  mutate(event = factor(j), weight = factor(weight, levels = c(1:numberOfEventsStudentsCanPerform))) %>% 
   group_by(event, weight) %>% 
   summarise(count = n()) %>% 
   tidyr::complete(weight, fill = list(count = 0))
