@@ -3,12 +3,13 @@ pacman::p_load(ompr,
                purrr,
                dplyr,
                ompr.roi,
-               ROI.plugin.glpk)
+               ROI.plugin.glpk, 
+               viridis)
 
 CurrentStudents <- 40
 events <- 4
 numberOfEventsStudentsCanPerform<-3
-eventStudentCapacity<-8:11 #must be the same length as: events
+eventStudentCapacity<-c(7,9,10,12) #must be the same length as: events
 
 # Each student has three options. To model this we have a function that gives us three events 
 # for each student. The first component has perference 1, second 2, and third 3
